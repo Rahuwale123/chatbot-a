@@ -4,10 +4,12 @@ from typing import List, Dict, Any, Tuple
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentExecutor, create_structured_chat_agent
 from langchain import hub
-from tools import nearby_search
+from tools import nearby_search, grounded_search, get_current_datetime
 from schemas import NearbyItem
 
-def get_agent_executor(client_id: str, lat: float, long: float):
+
+def get_agent_executor(client_id: str, lat: float, long: float, live_mode: bool = False):
+
     # Bind context to the tool
     # We create a wrapper to ensure the agent doesn't have to provide lat/long/client_id
     def search_wrapper(query: str):
@@ -27,9 +29,13 @@ def get_agent_executor(client_id: str, lat: float, long: float):
         convert_system_message_to_human=True
     )
     
-    tools = [nearby_search]
+    tools = [nearby_search, get_current_datetime]
+    if live_mode:
+        tools.append(grounded_search)
+
     
     prompt = hub.pull("hwchase17/structured-chat-agent")
+
     
     agent = create_structured_chat_agent(llm, tools, prompt)
     
@@ -43,9 +49,10 @@ def get_agent_executor(client_id: str, lat: float, long: float):
     
     return agent_executor
 
-async def run_sangamner_agent(query: str, client_id: str, lat: float, long: float, history: List[Dict[str, str]] = None) -> Tuple[str, List[NearbyItem]]:
+async def run_sangamner_agent(query: str, client_id: str, lat: float, long: float, history: List[Dict[str, str]] = None, live_mode: bool = False) -> Tuple[str, List[NearbyItem]]:
     # Create the executor with the specific context
-    agent_executor = get_agent_executor(client_id, lat, long)
+    agent_executor = get_agent_executor(client_id, lat, long, live_mode)
+
     
     # Format history for the prompt
     history_str = ""
@@ -62,8 +69,10 @@ async def run_sangamner_agent(query: str, client_id: str, lat: float, long: floa
     Pass the context parameters (lat, long, client_id) to the tool.
     
     IMPORTANT: 
-    - Only use the `nearby_search` tool if the user explicitly asks to find something or expresses a need for a service. 
+    - Only use the `nearby_search` tool if the user explicitly asks to find something in Sangamner or expresses a need for a local service. 
+    - {"Only use the `grounded_search` tool if `live_mode` is enabled and the user asks for real-time information or something outside local services." if live_mode else ""}
     - Do NOT use tools for simple greetings, introductions, or casual conversation (e.g., "hi", "I am Rahul"). In these cases, just respond naturally and wait for a specific request.
+
     - Do not list the names, phone numbers, or details of the services found in your text response. 
     - Just give a very brief and natural summary or greeting (e.g., "I found 3 hospitals nearby."). 
     - The details will be shown in a separate UI component. 

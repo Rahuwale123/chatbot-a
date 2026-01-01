@@ -26,7 +26,8 @@ async def ai_endpoint(request: ChatRequest):
             client_id=request.client_id,
             lat=request.lat,
             long=request.long,
-            history=[{"role": m.role, "content": m.content} for m in request.history] if request.history else []
+            history=[{"role": m.role, "content": m.content} for m in request.history] if request.history else [],
+            live_mode=request.live_mode
         )
         
         return ChatResponse(

@@ -13,6 +13,8 @@ class ChatRequest(BaseModel):
     long: float
     query: str
     history: Optional[List[ChatMessage]] = []
+    live_mode: bool = False
+
 
 
 

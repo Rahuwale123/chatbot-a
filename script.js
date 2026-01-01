@@ -1,6 +1,8 @@
 const chatWindow = document.getElementById('chat-window');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
+const liveToggle = document.getElementById('live-toggle');
+
 
 const HARDCODED_CONTEXT = {
     client_id: "9a1b2c3d-4e5f-4a91-8911-2c3d4e500001",
@@ -48,7 +50,9 @@ async function sendMessage() {
     const text = userInput.value.trim();
     if (!text) return;
 
+    const liveMode = liveToggle.checked;
     appendMessage(text, false);
+
     userInput.value = '';
 
     // Show loading
@@ -67,8 +71,10 @@ async function sendMessage() {
             body: JSON.stringify({
                 query: text,
                 history: chatHistory.slice(-5),
+                live_mode: liveMode,
                 ...HARDCODED_CONTEXT
             })
+
         });
 
         const data = await response.json();
